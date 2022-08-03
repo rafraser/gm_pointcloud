@@ -96,11 +96,8 @@ function SWEP:SecondaryAttack()
     end
 end
 
-function SWEP:BroadcastPoints(data)
-    if #data < 1 then return end
-    local json = util.TableToJSON(self.points)
-    local url = self.CallbackEndpoint:GetString() .. "/points"
-
+function SWEP:PostJSON(tag, body)
+    local url = self.CallbackEndpoint:GetString() .. "/" .. tag
     -- Ensure our body is marked as json
     local headers = {
         ['Accept'] = 'application/json',
@@ -111,18 +108,52 @@ function SWEP:BroadcastPoints(data)
     local request = {
         url = url,
         method = "post",
-        body = json,
+        body = body,
         headers = headers,
         success = function() end,
         failed = function(err)
-            print(err)
+            print(tag, 'failed!', err)
         end
     }
     HTTP(request)
 end
 
+function SWEP:BroadcastPoints(data)
+    if #data < 1 then return end
+    local json = util.TableToJSON(self.points)
+    self:PostJSON("points", json)
+end
+
+function SWEP:BroadcastPlayers()
+    local res = {}
+    for _, v in pairs(player.GetAll()) do
+        local pos = v:GetPos()
+        local color = v:GetPlayerColor()
+        if color == Vector(0, 0, 0) then
+            color = Vector(1, 1, 1)
+        end
+
+        table.insert(res, {
+            name = v:Nick(),
+            color = {color.x * 255, color.y * 255, color.z * 255},
+            pos = {pos.x, pos.y, pos.z}
+        })
+    end
+
+    local json = util.TableToJSON(res)
+    self:PostJSON("players", json)
+end
+
 function SWEP:Think()
-    if SERVER then return end
+    if SERVER then
+        -- Every few seconds, broadcast player locations
+        if not self.NextThinkTime or CurTime() > self.NextThinkTime then
+            self:BroadcastPlayers(self.points)
+            self.NextThinkTime = CurTime() + 1
+        end
+
+        return
+    end
 
     -- Every few seconds, broadcast our points up to the server
     if not self.NextThinkTime or CurTime() > self.NextThinkTime then

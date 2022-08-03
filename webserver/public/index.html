@@ -16,6 +16,28 @@
     <script>
         let currentChunkId = 0;
         const mapLayers = [];
+        let playerLayer = null;
+
+        function buildPlayerLayer(data) {
+            console.log(data)
+            playerLayer = new deck.TextLayer({
+                id: 'player-labels-layer',
+                data: data,
+                coordinateSystem: deck.COORDINATE_SYSTEM.METER_OFFSETS,
+                coordinateOrigin: [0, 0],
+                getSize: 16,
+                getText: d => d.name,
+                getPosition: d => [d.pos[0], d.pos[1], d.pos[2] + 2500],
+                getColor: d => d.color,
+                outlineColor: [0, 0, 0, 255],
+                outlineWidth: 0.5,
+                fontSettings: { sdf: true },
+                parameters: {
+                    depthTest: false
+                }
+            })
+            deckgl.setProps({ layers: [...mapLayers, playerLayer] });
+        }
 
         function buildPointCloud(data) {
             console.log(`point-cloud-layer${currentChunkId}`)
@@ -24,14 +46,14 @@
                 data: data,
                 coordinateSystem: deck.COORDINATE_SYSTEM.METER_OFFSETS,
                 coordinateOrigin: [0, 0],
-                pointSize: 2,
-                getPosition: (d) => [d[0], d[1], d[2] + 12000],
+                pointSize: 1,
+                getPosition: (d) => [d[0], d[1], d[2] + 2500],
                 getColor: (d) => [d[3], d[4], d[5]]
             })
             currentChunkId += 1;
 
             mapLayers.push(layer);
-            deckgl.setProps({ layers: [...mapLayers] });
+            deckgl.setProps({ layers: [...mapLayers, playerLayer] });
         }
 
         const INITIAL_VIEW_STATE = {
@@ -49,8 +71,12 @@
         })
 
         const socket = io()
-        socket.on('points', function (data) {
+        socket.on('points', (data) => {
             buildPointCloud(data)
+        })
+
+        socket.on('players', (data) => {
+            buildPlayerLayer(data)
         })
     </script>
 </body>

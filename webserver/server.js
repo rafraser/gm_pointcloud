@@ -9,9 +9,16 @@ const io = new IOServer(server);
 
 // Simple relay for points
 app.use(express.json({ limit: '10mb', type: '*/*' }));
-app.post('/data', (req, res) => {
+app.post('/points', (req, res) => {
   io.emit('points', req.body);
   console.log('Broadcasting', req.body.length, 'points');
+  res.sendStatus(200);
+});
+
+// Simple relay for player locations
+app.post('/players', (req, res) => {
+  io.emit('players', req.body);
+  console.log('Broading', req.body.length, 'players');
   res.sendStatus(200);
 });
 
