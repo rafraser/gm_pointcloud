@@ -1,0 +1,58 @@
+<html>
+
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <title>Garry's Mod Point Cloud</title>
+    <script src="https://unpkg.com/deck.gl@latest/dist.min.js"></script>
+    <script src="https://unpkg.com/socket.io-client@4.5.1/dist/socket.io.js"></script>
+</head>
+
+<body oncontextmenu="return false">
+    <script>
+        let currentChunkId = 0;
+        const mapLayers = [];
+
+        function buildPointCloud(data) {
+            console.log(`point-cloud-layer${currentChunkId}`)
+            const layer = new deck.PointCloudLayer({
+                id: `point-cloud-layer${currentChunkId}`,
+                data: data,
+                coordinateSystem: deck.COORDINATE_SYSTEM.METER_OFFSETS,
+                coordinateOrigin: [0, 0],
+                pointSize: 2,
+                getPosition: (d) => [d[0], d[1], d[2] + 12000],
+                getColor: (d) => [d[3], d[4], d[5]]
+            })
+            currentChunkId += 1;
+
+            mapLayers.push(layer);
+            deckgl.setProps({ layers: [...mapLayers] });
+        }
+
+        const INITIAL_VIEW_STATE = {
+            latitude: 0,
+            longitude: 0,
+            zoom: 13,
+            bearing: 0,
+            pitch: 45
+        };
+
+        const deckgl = new deck.Deck({
+            initialViewState: INITIAL_VIEW_STATE,
+            controller: true,
+            layers: []
+        })
+
+        const socket = io()
+        socket.on('points', function (data) {
+            buildPointCloud(data)
+        })
+    </script>
+</body>
+
+</html>
